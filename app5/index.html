@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Công cụ tính lương Gross/Net 2026 - Standard Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 font-sans text-gray-800">
+
+    <div class="max-w-6xl mx-auto px-4 py-10">
+        <header class="mb-10 text-center">
+            <h1 class="text-3xl font-extrabold text-blue-900 uppercase tracking-tight">Tính Lương Gross $\rightarrow$ Net 2026</h1>
+            <p class="text-gray-500 mt-2 italic text-sm">Cập nhật theo biểu thuế 5 bậc và giảm trừ gia cảnh mới nhất</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div class="lg:col-span-5 space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h2 class="text-lg font-bold mb-5 flex items-center"><i class="fa-solid fa-calculator mr-2 text-blue-600"></i> Nhập thông tin</h2>
+                    
+                    <div class="space-y-5">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-600 mb-1">Thu nhập Gross (VND)</label>
+                            <input type="number" id="grossInput" placeholder="Ví dụ: 30,000,000" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-lg">
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-600 mb-1">Người phụ thuộc</label>
+                                <input type="number" id="dependentsInput" value="0" min="0" class="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-600 mb-1">Vùng</label>
+                                <select id="regionSelect" class="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl outline-none">
+                                    <option value="5310000">Vùng I (5.31tr)</option>
+                                    <option value="4730000">Vùng II (4.73tr)</option>
+                                    <option value="4140000">Vùng III (4.14tr)</option>
+                                    <option value="3700000">Vùng IV (3.70tr)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button onclick="calculate()" class="w-full py-4 bg-blue-700 text-white rounded-xl font-bold text-lg shadow-lg shadow-blue-200 hover:bg-blue-800 transform active:scale-95 transition-all">
+                            TÍNH LƯƠNG THỰC NHẬN
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                    <h3 class="text-blue-800 font-bold text-sm mb-1 uppercase tracking-wider">Thông số áp dụng (2026):</h3>
+                    <ul class="text-xs text-blue-700 space-y-1">
+                        <li>• Giảm trừ bản thân: 15,500,000đ</li>
+                        <li>• Giảm trừ người phụ thuộc: 6,200,000đ/người</li>
+                        <li>• Lương cơ sở tính trần BH: 2,340,000đ</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="lg:col-span-7">
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="bg-blue-900 p-6 text-center text-white">
+                        <p class="text-blue-200 text-sm font-medium uppercase">Lương Net thực nhận (Tháng)</p>
+                        <h2 id="netDisplay" class="text-4xl font-black mt-1">0 <small class="text-lg">đ</small></h2>
+                    </div>
+
+                    <div class="p-6">
+                        <h3 class="font-bold text-gray-700 mb-4 border-b pb-2">Chi tiết các khoản khấu trừ</h3>
+                        <div class="space-y-4 text-sm" id="breakdown">
+                            <div class="flex justify-between items-center text-gray-600">
+                                <span>Bảo hiểm xã hội (8%)</span>
+                                <span id="bhxhVal" class="font-semibold">0đ</span>
+                            </div>
+                            <div class="flex justify-between items-center text-gray-600">
+                                <span>Bảo hiểm y tế (1.5%)</span>
+                                <span id="bhytVal" class="font-semibold">0đ</span>
+                            </div>
+                            <div class="flex justify-between items-center text-gray-600">
+                                <span>Bảo hiểm thất nghiệp (1%)</span>
+                                <span id="bhtnVal" class="font-semibold">0đ</span>
+                            </div>
+                            <div class="flex justify-between items-center text-red-600 pt-2 border-t border-dashed">
+                                <span class="font-bold uppercase">Thuế TNCN (Biểu 5 bậc)</span>
+                                <span id="taxVal" class="font-bold">0đ</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-gray-800">Lịch sử tính toán</h3>
+                        <button onclick="clearHistory()" class="text-xs text-red-500 hover:underline">Xóa lịch sử</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="p-3 font-semibold text-gray-600">Gross</th>
+                                    <th class="p-3 font-semibold text-gray-600">Net</th>
+                                    <th class="p-3 font-semibold text-gray-600">Thuế TNCN</th>
+                                    <th class="p-3 font-semibold text-gray-600">NPT</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // HẰNG SỐ CHUẨN 2026
+        const GIAM_TRU_BAN_THAN = 15500000;
+        const GIAM_TRU_PHU_THUOC = 6200000;
+        const LUONG_CO_SO = 2340000;
+
+        function calculate() {
+            const gross = parseFloat(document.getElementById('grossInput').value) || 0;
+            const dependents = parseInt(document.getElementById('dependentsInput').value) || 0;
+            const minWageVung = parseFloat(document.getElementById('regionSelect').value);
+
+            // 1. TÍNH BẢO HIỂM
+            // Trần đóng BHXH, BHYT = 20 lần Lương cơ sở
+            const limitBH = 20 * LUONG_CO_SO;
+            const baseBH = Math.min(gross, limitBH);
+            const bhxh = baseBH * 0.08;
+            const bhyt = baseBH * 0.015;
+
+            // Trần đóng BHTN = 20 lần Lương tối thiểu vùng
+            const limitBHTN = 20 * minWageVung;
+            const baseBHTN = Math.min(gross, limitBHTN);
+            const bhtn = baseBHTN * 0.01;
+
+            const totalBH = bhxh + bhyt + bhtn;
+
+            // 2. TÍNH THUẾ TNCN (BIỂU 5 BẬC 2026)
+            const thuNhapChiuThue = Math.max(0, gross - totalBH - GIAM_TRU_BAN_THAN - (dependents * GIAM_TRU_PHU_THUOC));
+            const tax = calculateTNCN2026(thuNhapChiuThue);
+
+            // 3. LƯƠNG NET
+            const net = gross - totalBH - tax;
+
+            // HIỂN THỊ
+            updateUI(net, bhxh, bhyt, bhtn, tax);
+            saveHistory(gross, net, tax, dependents);
+        }
+
+        /**
+         * Logic biểu thuế 5 bậc áp dụng 2026
+         * Bậc 1: Đến 10tr: 5%
+         * Bậc 2: 10 - 30tr: 10%
+         * Bậc 3: 30 - 60tr: 20%
+         * Bậc 4: 60 - 100tr: 30%
+         * Bậc 5: Trên 100tr: 35%
+         */
+        function calculateTNCN2026(tntt) {
+            if (tntt <= 0) return 0;
+            if (tntt <= 10000000) return tntt * 0.05;
+            if (tntt <= 30000000) return tntt * 0.1 - 500000;
+            if (tntt <= 60000000) return tntt * 0.2 - 3500000;
+            if (tntt <= 100000000) return tntt * 0.3 - 9500000;
+            return tntt * 0.35 - 14500000;
+        }
+
+        function formatVND(num) {
+            return num.toLocaleString('vi-VN') + " đ";
+        }
+
+        function updateUI(net, bhxh, bhyt, bhtn, tax) {
+            document.getElementById('netDisplay').innerText = formatVND(Math.round(net));
+            document.getElementById('bhxhVal').innerText = formatVND(Math.round(bhxh));
+            document.getElementById('bhytVal').innerText = formatVND(Math.round(bhyt));
+            document.getElementById('bhtnVal').innerText = formatVND(Math.round(bhtn));
+            document.getElementById('taxVal').innerText = formatVND(Math.round(tax));
+        }
+
+        // LOCAL STORAGE LOGIC
+        function saveHistory(gross, net, tax, npt) {
+            let history = JSON.parse(localStorage.getItem('salary_history_2026')) || [];
+            history.unshift({ gross, net, tax, npt });
+            localStorage.setItem('salary_history_2026', JSON.stringify(history.slice(0, 5)));
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const history = JSON.parse(localStorage.getItem('salary_history_2026')) || [];
+            const html = history.map(item => `
+                <tr class="border-t hover:bg-gray-50 transition">
+                    <td class="p-3 font-medium">${formatVND(item.gross)}</td>
+                    <td class="p-3 text-blue-700 font-bold">${formatVND(item.net)}</td>
+                    <td class="p-3 text-red-500">${formatVND(item.tax)}</td>
+                    <td class="p-3 text-gray-500">${item.npt}</td>
+                </tr>
+            `).join('');
+            document.getElementById('historyBody').innerHTML = html;
+        }
+
+        function clearHistory() {
+            localStorage.removeItem('salary_history_2026');
+            renderHistory();
+        }
+
+        window.onload = renderHistory;
+    </script>
+</body>
+</html>

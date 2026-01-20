@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Khách Mời Đám Cưới</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        const WeddingApp = () => {
+            // 1. Khởi tạo State từ LocalStorage
+            const [guests, setGuests] = useState(() => {
+                const saved = localStorage.getItem('wedding_guests');
+                return saved ? JSON.parse(saved) : [];
+            });
+
+            const [formData, setFormData] = useState({
+                id: '', name: '', group: 'Bạn bè', table: '', inviteStatus: 'Chưa mời', attendStatus: 'Chờ phản hồi'
+            });
+
+            const [searchTerm, setSearchTerm] = useState('');
+            const [isEditing, setIsEditing] = useState(false);
+
+            // 2. Lưu vào LocalStorage mỗi khi danh sách thay đổi
+            useEffect(() => {
+                localStorage.setItem('wedding_guests', JSON.stringify(guests));
+            }, [guests]);
+
+            // 3. Xử lý Form
+            const handleInputChange = (e) => {
+                setFormData({ ...formData, [e.target.name]: e.target.value });
+            };
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (!formData.name) return alert("Vui lòng nhập tên khách!");
+
+                if (isEditing) {
+                    setGuests(guests.map(g => g.id === formData.id ? formData : g));
+                    setIsEditing(false);
+                } else {
+                    setGuests([...guests, { ...formData, id: Date.now().toString() }]);
+                }
+                setFormData({ id: '', name: '', group: 'Bạn bè', table: '', inviteStatus: 'Chưa mời', attendStatus: 'Chờ phản hồi' });
+            };
+
+            const handleEdit = (guest) => {
+                setFormData(guest);
+                setIsEditing(true);
+            };
+
+            const handleDelete = (id) => {
+                if (confirm("Bạn có chắc muốn xóa khách này?")) {
+                    setGuests(guests.filter(g => g.id !== id));
+                }
+            };
+
+            // 4. Tìm kiếm và Thống kê
+            const filteredGuests = guests.filter(g => 
+                g.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                g.group.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+
+            const stats = useMemo(() => ({
+                total: guests.length,
+                invited: guests.filter(g => g.inviteStatus === 'Đã mời').length,
+                attending: guests.filter(g => g.attendStatus === 'Xác nhận').length
+            }), [guests]);
+
+            return (
+                <div className="container mx-auto p-4 max-w-6xl">
+                    <header className="mb-8 text-center">
+                        <h1 className="text-3xl font-bold text-pink-600 mb-2 italic">❤️ Wedding Guest Manager</h1>
+                        <p className="text-gray-600">Lên kế hoạch và theo dõi khách mời chuyên nghiệp</p>
+                    </header>
+
+                    {/* Thống kê nhanh */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                        <div className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-blue-500">
+                            <h3 className="text-gray-500 text-sm uppercase font-bold">Tổng khách</h3>
+                            <p className="text-3xl font-semibold">{stats.total}</p>
+                        </div>
+                        <div className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-yellow-500">
+                            <h3 className="text-gray-500 text-sm uppercase font-bold">Đã gửi thiệp</h3>
+                            <p className="text-3xl font-semibold">{stats.invited}</p>
+                        </div>
+                        <div className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-green-500">
+                            <h3 className="text-gray-500 text-sm uppercase font-bold">Chắc chắn đi</h3>
+                            <p className="text-3xl font-semibold">{stats.attending}</p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        {/* Form Nhập liệu */}
+                        <div className="bg-white p-6 rounded-xl shadow-md h-fit">
+                            <h2 className="text-xl font-bold mb-4">{isEditing ? 'Cập nhật thông tin' : 'Thêm khách mời mới'}</h2>
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Tên khách mời</label>
+                                    <input name="name" value={formData.name} onChange={handleInputChange} className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-pink-300 outline-none" placeholder="VD: Nguyễn Văn A" />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Nhóm</label>
+                                        <select name="group" value={formData.group} onChange={handleInputChange} className="w-full border rounded-lg px-3 py-2">
+                                            <option>Bạn bè</option>
+                                            <option>Họ nội</option>
+                                            <option>Họ ngoại</option>
+                                            <option>Đồng nghiệp</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Số bàn</label>
+                                        <input name="table" value={formData.table} onChange={handleInputChange} className="w-full border rounded-lg px-3 py-2" placeholder="Số/Tên bàn" />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Thiệp mời</label>
+                                        <select name="inviteStatus" value={formData.inviteStatus} onChange={handleInputChange} className="w-full border rounded-lg px-3 py-2">
+                                            <option>Chưa mời</option>
+                                            <option>Đã mời</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Tham gia</label>
+                                        <select name="attendStatus" value={formData.attendStatus} onChange={handleInputChange} className="w-full border rounded-lg px-3 py-2">
+                                            <option>Chờ phản hồi</option>
+                                            <option>Xác nhận</option>
+                                            <option>Không đi</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <button type="submit" className={`w-full py-2 rounded-lg text-white font-bold transition ${isEditing ? 'bg-orange-500 hover:bg-orange-600' : 'bg-pink-500 hover:bg-pink-600'}`}>
+                                    {isEditing ? 'Cập nhật' : 'Thêm vào danh sách'}
+                                </button>
+                                {isEditing && <button onClick={() => {setIsEditing(false); setFormData({id: '', name: '', group: 'Bạn bè', table: '', inviteStatus: 'Chưa mời', attendStatus: 'Chờ phản hồi'})}} type="button" className="w-full text-gray-500 mt-2">Hủy</button>}
+                            </form>
+                        </div>
+
+                        {/* Danh sách khách */}
+                        <div className="lg:col-span-2">
+                            <div className="bg-white rounded-xl shadow-md overflow-hidden">
+                                <div className="p-4 border-b">
+                                    <input 
+                                        type="text" 
+                                        placeholder="Tìm kiếm theo tên hoặc nhóm..." 
+                                        className="w-full border rounded-full px-4 py-2 outline-none focus:border-pink-300"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left">
+                                        <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
+                                            <tr>
+                                                <th className="px-6 py-3">Tên</th>
+                                                <th className="px-6 py-3">Nhóm / Bàn</th>
+                                                <th className="px-6 py-3">Trạng thái</th>
+                                                <th className="px-6 py-3">Hành động</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y">
+                                            {filteredGuests.length > 0 ? filteredGuests.map(guest => (
+                                                <tr key={guest.id} className="hover:bg-gray-50 transition">
+                                                    <td className="px-6 py-4 font-medium text-gray-900">{guest.name}</td>
+                                                    <td className="px-6 py-4">
+                                                        <span className="block text-sm font-semibold text-indigo-600">{guest.group}</span>
+                                                        <span className="text-xs text-gray-500">Bàn: {guest.table || '---'}</span>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex flex-col gap-1">
+                                                            <span className={`text-[10px] px-2 py-0.5 rounded-full w-fit ${guest.inviteStatus === 'Đã mời' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                                                                {guest.inviteStatus}
+                                                            </span>
+                                                            <span className={`text-[10px] px-2 py-0.5 rounded-full w-fit ${guest.attendStatus === 'Xác nhận' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-600'}`}>
+                                                                {guest.attendStatus}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 space-x-3">
+                                                        <button onClick={() => handleEdit(guest)} className="text-blue-500 hover:text-blue-700"><i className="fa-solid fa-pen-to-square"></i></button>
+                                                        <button onClick={() => handleDelete(guest.id)} className="text-red-400 hover:text-red-600"><i className="fa-solid fa-trash"></i></button>
+                                                    </td>
+                                                </tr>
+                                            )) : (
+                                                <tr>
+                                                    <td colSpan="4" className="text-center py-10 text-gray-400 italic">Chưa có khách mời nào trong danh sách</td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<WeddingApp />);
+    </script>
+</body>
+</html>

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Công cụ Dự toán Tài chính - Payback Period</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .money-preview { @apply text-[10px] text-blue-500 mt-1 font-medium; }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+
+    <div class="container mx-auto p-4 max-w-6xl">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-blue-900 uppercase">Dự toán Hoàn vốn đầu tư</h1>
+            <p class="text-gray-500 italic">Tính toán thời gian thu hồi vốn thực tế</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-lg border-t-4 border-blue-600">
+                <h2 class="text-lg font-bold mb-4 text-gray-700">Thông số kinh doanh</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase">Vốn đầu tư ban đầu</label>
+                        <input type="number" id="initialInvestment" oninput="updatePreview(this)" class="w-full mt-1 p-2 bg-gray-50 border rounded-md" value="20000000">
+                        <p id="initialInvestment-preview" class="money-preview">20.000.000đ</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase">Chi phí cố định (FC)/tháng</label>
+                        <input type="number" id="fixedCosts" oninput="updatePreview(this)" class="w-full mt-1 p-2 bg-gray-50 border rounded-md" value="5000000">
+                        <p id="fixedCosts-preview" class="money-preview">5.000.000đ</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase">Giá bán mỗi đơn vị (P)</label>
+                        <input type="number" id="pricePerUnit" oninput="updatePreview(this)" class="w-full mt-1 p-2 bg-gray-50 border rounded-md" value="200000">
+                        <p id="pricePerUnit-preview" class="money-preview">200.000đ</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase">Biến phí (VC)/đơn vị</label>
+                        <input type="number" id="variableCostPerUnit" oninput="updatePreview(this)" class="w-full mt-1 p-2 bg-gray-50 border rounded-md" value="60000">
+                        <p id="variableCostPerUnit-preview" class="money-preview">60.000đ</p>
+                    </div>
+                    <div class="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                        <label class="block text-xs font-bold text-yellow-700 uppercase">Sản lượng bán dự kiến/tháng</label>
+                        <input type="number" id="expectedSales" class="w-full mt-1 p-2 border-yellow-300 border rounded-md focus:ring-yellow-500" value="150">
+                        <p class="text-[10px] text-yellow-600 mt-1">* Phải lớn hơn điểm hòa vốn để có lãi</p>
+                    </div>
+                    <button id="btnSubmit" onclick="processData()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 shadow-md">
+                        PHÂN TÍCH NGAY
+                    </button>
+                </div>
+            </div>
+
+            <div class="lg:col-span-3 space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-white p-4 rounded-xl shadow border-b-4 border-blue-400 text-center">
+                        <p class="text-xs font-bold text-gray-400 uppercase">Điểm hòa vốn tháng</p>
+                        <h3 class="text-xl font-black text-blue-600" id="resUnits">0</h3>
+                        <p class="text-[10px] text-gray-400">sản phẩm</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow border-b-4 border-green-400 text-center">
+                        <p class="text-xs font-bold text-gray-400 uppercase">Lợi nhuận dự kiến/tháng</p>
+                        <h3 class="text-xl font-black text-green-600" id="resProfit">0đ</h3>
+                        <p class="text-[10px] text-gray-400">sau khi trừ chi phí</p>
+                    </div>
+                    <div class="bg-blue-600 p-4 rounded-xl shadow text-white text-center">
+                        <p class="text-xs font-bold uppercase opacity-80">Thời gian hoàn vốn đầu tư</p>
+                        <h3 class="text-2xl font-black" id="resPayback">...</h3>
+                        <p class="text-[10px] opacity-80" id="paybackStatus">Dự kiến hoàn vốn</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow border border-gray-100">
+                    <h2 class="text-lg font-bold mb-4 text-gray-700">Biểu đồ Điểm hòa vốn & Doanh thu</h2>
+                    <canvas id="bepChart" width="400" height="180"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyfjRxEvvryHR5ag0kAt8k7mBocl072L234U4H6vR7yZAspKuQlXhu0Ght-5F8PXp7unw/exec';
+    let myChart;
+
+    // Hàm định dạng tiền Việt Nam
+    function formatVND(amount) {
+        return new Intl.NumberFormat('vi-VN').format(amount) + "đ";
+    }
+
+    // Cập nhật dòng chữ xem trước số tiền ngay khi nhập
+    function updatePreview(input) {
+        const previewId = input.id + "-preview";
+        const previewElement = document.getElementById(previewId);
+        if (previewElement) {
+            previewElement.innerText = formatVND(parseFloat(input.value) || 0);
+        }
+    }
+
+    window.onload = function() {
+        const savedData = localStorage.getItem('bepAppData');
+        if (savedData) {
+            const data = JSON.parse(savedData);
+            document.getElementById('initialInvestment').value = data.initialInvestment;
+            document.getElementById('fixedCosts').value = data.fixedCosts;
+            document.getElementById('pricePerUnit').value = data.pricePerUnit;
+            document.getElementById('variableCostPerUnit').value = data.variableCostPerUnit;
+            document.getElementById('expectedSales').value = data.expectedSales;
+            
+            // Cập nhật toàn bộ preview sau khi load dữ liệu cũ
+            ['initialInvestment', 'fixedCosts', 'pricePerUnit', 'variableCostPerUnit'].forEach(id => {
+                updatePreview(document.getElementById(id));
+            });
+        }
+        refreshUI(false); 
+    };
+
+    async function processData() { await refreshUI(true); }
+
+    async function refreshUI(shouldSendToSheet) {
+        const btn = document.getElementById('btnSubmit');
+        const inputs = {
+            initialInvestment: parseFloat(document.getElementById('initialInvestment').value) || 0,
+            fixedCosts: parseFloat(document.getElementById('fixedCosts').value) || 0,
+            pricePerUnit: parseFloat(document.getElementById('pricePerUnit').value) || 0,
+            variableCostPerUnit: parseFloat(document.getElementById('variableCostPerUnit').value) || 0,
+            expectedSales: parseFloat(document.getElementById('expectedSales').value) || 0
+        };
+
+        const margin = inputs.pricePerUnit - inputs.variableCostPerUnit;
+        if (margin <= 0) { alert("Lỗi: Giá bán phải lớn hơn biến phí!"); return; }
+
+        const bepUnits = Math.ceil(inputs.fixedCosts / margin);
+        const bepRevenue = bepUnits * inputs.pricePerUnit;
+        const monthlyProfit = (margin * inputs.expectedSales) - inputs.fixedCosts;
+        
+        let paybackMonths = 0;
+        let paybackText = "";
+
+        if (monthlyProfit <= 0) {
+            paybackText = "Vô hạn";
+            document.getElementById('paybackStatus').innerText = "Kinh doanh đang lỗ, không thể hoàn vốn";
+        } else {
+            paybackMonths = Math.ceil(inputs.initialInvestment / monthlyProfit);
+            paybackText = paybackMonths + " tháng";
+            document.getElementById('paybackStatus').innerText = `Dự kiến thu hồi ${formatVND(inputs.initialInvestment)}`;
+        }
+
+        // CẬP NHẬT GIAO DIỆN VỚI ĐỊNH DẠNG TIỀN TỆ
+        document.getElementById('resUnits').innerText = bepUnits.toLocaleString('vi-VN');
+        document.getElementById('resProfit').innerText = formatVND(monthlyProfit > 0 ? monthlyProfit : 0);
+        document.getElementById('resPayback').innerText = paybackText;
+
+        updateChart(inputs, bepUnits);
+        localStorage.setItem('bepAppData', JSON.stringify(inputs));
+
+        if (shouldSendToSheet) {
+            btn.innerText = "ĐANG LƯU...";
+            btn.disabled = true;
+            const dataToUpload = { ...inputs, bepUnits, bepRevenue, paybackMonths };
+
+            try {
+                await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST', mode: 'no-cors', cache: 'no-cache',
+                    body: JSON.stringify(dataToUpload)
+                });
+                alert("Đã đồng bộ dữ liệu hoàn vốn lên Google Sheet!");
+            } catch (e) {
+                alert("Lỗi kết nối Sheet!");
+            } finally {
+                btn.innerText = "PHÂN TÍCH NGAY";
+                btn.disabled = false;
+            }
+        }
+    }
+
+    function updateChart(inputs, bepUnits) {
+        const ctx = document.getElementById('bepChart').getContext('2d');
+        const labels = []; const revData = []; const costData = [];
+        const range = Math.max(bepUnits * 2, inputs.expectedSales * 1.2);
+
+        for (let i = 0; i <= range; i += Math.ceil(range/10)) {
+            labels.push(i);
+            revData.push(i * inputs.pricePerUnit);
+            costData.push(inputs.fixedCosts + (i * inputs.variableCostPerUnit));
+        }
+
+        if (myChart) myChart.destroy();
+        myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: 'Doanh thu', data: revData, borderColor: '#10b981', fill: false },
+                    { label: 'Chi phí', data: costData, borderColor: '#ef4444', fill: false }
+                ]
+            },
+            options: { 
+                responsive: true,
+                scales: {
+                    y: {
+                        ticks: {
+                            callback: function(value) { return value.toLocaleString('vi-VN') + 'đ'; }
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý CSVC Đám Cưới - Countdown Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .active-filter { background-color: #1e293b !important; color: white !important; border-color: #1e293b !important; }
+        .deadline-urgent { color: #ef4444; font-weight: 700; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-6xl mx-auto">
+        <header class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+            <div>
+                <h1 class="text-3xl font-extrabold text-slate-800 tracking-tight uppercase italic">Quản Lý CSVC Đám Cưới</h1>
+                <p id="currentContext" class="text-slate-500 mt-1 font-medium">Theo dõi tiến độ và đếm ngược Deadline</p>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 text-center md:text-left">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Tổng vật phẩm</p>
+                <h3 id="totalItems" class="text-4xl font-black text-slate-800">0</h3>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Đã hoàn thành</p>
+                <h3 id="completedItems" class="text-4xl font-black text-green-600">0</h3>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Tiến độ chung</p>
+                <div class="flex items-center gap-4">
+                    <h3 id="progressPercent" class="text-4xl font-black text-blue-600">0%</h3>
+                    <div class="grow bg-slate-100 rounded-full h-3 overflow-hidden">
+                        <div id="progressBar" class="bg-blue-600 h-full transition-all duration-700" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8">
+            <div class="flex gap-2 overflow-x-auto pb-2 w-full no-scrollbar">
+                <button onclick="setFilter('All')" class="filter-btn active-filter px-5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 font-bold text-sm transition-all whitespace-nowrap">Tất cả</button>
+                <button onclick="setFilter('Chụp ảnh cưới')" class="filter-btn px-5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 font-bold text-sm transition-all whitespace-nowrap">Chụp ảnh cưới</button>
+                <button onclick="setFilter('Lễ dạm ngõ')" class="filter-btn px-5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 font-bold text-sm transition-all whitespace-nowrap">Lễ dạm ngõ</button>
+                <button onclick="setFilter('Lễ vu quy')" class="filter-btn px-5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 font-bold text-sm transition-all whitespace-nowrap">Lễ vu quy</button>
+                <button onclick="setFilter('Tiệc cưới')" class="filter-btn px-5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 font-bold text-sm transition-all whitespace-nowrap">Tiệc cưới</button>
+            </div>
+            <button onclick="openModal()" class="w-full lg:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-black uppercase tracking-wider transition-all shadow-lg active:scale-95">
+                + Thêm CSVC mới
+            </button>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50/50 border-b border-slate-100">
+                            <th class="p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Status</th>
+                            <th class="p-5 text-sm font-bold text-slate-600 uppercase">Tên vật phẩm</th>
+                            <th class="p-5 text-sm font-bold text-slate-600 uppercase text-center">Đếm ngược</th>
+                            <th class="p-5 text-sm font-bold text-slate-600 uppercase">Hạn chót</th>
+                            <th class="p-5 text-sm font-bold text-slate-600 uppercase text-right">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="itemTableBody"></tbody>
+                </table>
+            </div>
+            <div id="emptyState" class="hidden py-20 text-center text-slate-400 italic">
+                <p>Chưa có dữ liệu nào cho mục này.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-8 shadow-2xl scale-100">
+            <h2 class="text-2xl font-black text-slate-800 uppercase italic mb-6">Thông tin CSVC</h2>
+            <form id="itemForm" class="space-y-4">
+                <input type="hidden" id="editId">
+                <input type="text" id="itemName" required class="w-full px-4 py-3 bg-slate-50 border rounded-xl outline-none focus:border-blue-500 font-medium" placeholder="Tên vật phẩm (VD: Váy cưới)">
+                <div class="grid grid-cols-2 gap-4">
+                    <select id="itemEvent" class="w-full px-4 py-3 bg-slate-50 border rounded-xl outline-none font-medium">
+                        <option value="Chụp ảnh cưới">Chụp ảnh cưới</option>
+                        <option value="Lễ dạm ngõ">Lễ dạm ngõ</option>
+                        <option value="Lễ vu quy">Lễ vu quy</option>
+                        <option value="Tiệc cưới">Tiệc cưới</option>
+                    </select>
+                    <input type="date" id="itemDeadline" required class="w-full px-4 py-3 bg-slate-50 border rounded-xl outline-none font-medium">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="text" id="itemAssignee" required class="w-full px-4 py-3 bg-slate-50 border rounded-xl outline-none font-medium" placeholder="Người phụ trách">
+                    <input type="text" id="itemVendor" class="w-full px-4 py-3 bg-slate-50 border rounded-xl outline-none font-medium" placeholder="Nhà cung cấp">
+                </div>
+                <button type="submit" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-lg shadow-xl uppercase italic">Lưu thông tin</button>
+                <button type="button" onclick="closeModal()" class="w-full text-slate-400 font-bold py-2 hover:text-red-500 transition-all uppercase text-xs tracking-widest mt-2">Đóng cửa sổ</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let items = JSON.parse(localStorage.getItem('wedding_items')) || [];
+        let currentFilter = 'All';
+
+        const itemTableBody = document.getElementById('itemTableBody');
+        const modal = document.getElementById('modal');
+        const itemForm = document.getElementById('itemForm');
+
+        // HÀM TÍNH ĐẾM NGƯỢC (Core feature mới)
+        function getCountdown(deadlineStr) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const deadline = new Date(deadlineStr);
+            deadline.setHours(0, 0, 0, 0);
+            
+            const diffTime = deadline - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays < 0) return { text: "Quá hạn", class: "text-red-500 font-black", urgent: true };
+            if (diffDays === 0) return { text: "Hôm nay", class: "text-orange-500 font-black", urgent: true };
+            if (diffDays <= 3) return { text: `Còn ${diffDays} ngày`, class: "deadline-urgent", urgent: true };
+            return { text: `Còn ${diffDays} ngày`, class: "text-slate-500 font-bold", urgent: false };
+        }
+
+        function save() {
+            localStorage.setItem('wedding_items', JSON.stringify(items));
+            render();
+        }
+
+        function render() {
+            const filteredItems = currentFilter === 'All' ? items : items.filter(i => i.event === currentFilter);
+            itemTableBody.innerHTML = '';
+            
+            if (filteredItems.length === 0) {
+                document.getElementById('emptyState').classList.remove('hidden');
+            } else {
+                document.getElementById('emptyState').classList.add('hidden');
+                filteredItems.forEach(item => {
+                    const countdown = getCountdown(item.deadline);
+                    const tr = document.createElement('tr');
+                    tr.className = `border-b border-slate-50 hover:bg-slate-50/80 transition-all ${item.completed ? 'bg-green-50/20' : ''}`;
+                    
+                    tr.innerHTML = `
+                        <td class="p-5 text-center">
+                            <input type="checkbox" ${item.completed ? 'checked' : ''} onchange="toggleItem(${item.id})" class="w-6 h-6 rounded-lg cursor-pointer accent-green-600">
+                        </td>
+                        <td class="p-5">
+                            <div class="font-bold ${item.completed ? 'line-through text-slate-400' : 'text-slate-800'}">${item.name}</div>
+                            <div class="text-[10px] uppercase font-black text-slate-300 tracking-tighter">${item.assignee} | ${item.vendor || 'N/A'}</div>
+                        </td>
+                        <td class="p-5 text-center">
+                            <span class="${item.completed ? 'text-green-500 font-bold' : countdown.class}">
+                                ${item.completed ? '<i class="fa-solid fa-check-double mr-1"></i> Xong' : countdown.text}
+                            </span>
+                        </td>
+                        <td class="p-5 text-sm font-semibold text-slate-400 uppercase tracking-tighter italic">
+                            ${item.deadline}
+                        </td>
+                        <td class="p-5 text-right space-x-2">
+                            <button onclick="editItem(${item.id})" class="text-blue-400 hover:text-blue-600 transition-all"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="deleteItem(${item.id})" class="text-slate-300 hover:text-red-500 transition-all"><i class="fa-solid fa-trash-can"></i></button>
+                        </td>
+                    `;
+                    itemTableBody.appendChild(tr);
+                });
+            }
+
+            // Update Stats
+            const total = filteredItems.length;
+            const completed = filteredItems.filter(i => i.completed).length;
+            const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
+
+            document.getElementById('totalItems').innerText = total;
+            document.getElementById('completedItems').innerText = completed;
+            document.getElementById('progressPercent').innerText = `${percent}%`;
+            document.getElementById('progressBar').style.width = `${percent}%`;
+        }
+
+        // --- Các hàm xử lý Event (Giữ nguyên logic bản trước) ---
+        function setFilter(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                if(btn.innerText.includes(filter) || (filter === 'All' && btn.innerText.includes('Tất cả'))) btn.classList.add('active-filter');
+                else btn.classList.remove('active-filter');
+            });
+            render();
+        }
+
+        itemForm.onsubmit = (e) => {
+            e.preventDefault();
+            const id = document.getElementById('editId').value;
+            const data = {
+                name: document.getElementById('itemName').value,
+                event: document.getElementById('itemEvent').value,
+                deadline: document.getElementById('itemDeadline').value,
+                assignee: document.getElementById('itemAssignee').value,
+                vendor: document.getElementById('itemVendor').value,
+            };
+            if (id) items = items.map(i => i.id == id ? { ...i, ...data } : i);
+            else items.push({ id: Date.now(), ...data, completed: false });
+            save();
+            closeModal();
+        };
+
+        function toggleItem(id) {
+            items = items.map(i => i.id === id ? {...i, completed: !i.completed} : i);
+            save();
+        }
+
+        function deleteItem(id) { if(confirm('Xóa mục này?')) { items = items.filter(i => i.id !== id); save(); } }
+
+        function editItem(id) {
+            const item = items.find(i => i.id === id);
+            document.getElementById('editId').value = item.id;
+            document.getElementById('itemName').value = item.name;
+            document.getElementById('itemEvent').value = item.event;
+            document.getElementById('itemDeadline').value = item.deadline;
+            document.getElementById('itemAssignee').value = item.assignee;
+            document.getElementById('itemVendor').value = item.vendor;
+            openModal();
+        }
+
+        function openModal() { modal.classList.remove('hidden'); }
+        function closeModal() { modal.classList.add('hidden'); itemForm.reset(); document.getElementById('editId').value = ''; }
+
+        render();
+    </script>
+</body>
+</html>
