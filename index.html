@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Duy Nguyễn - MVP Projects</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --bg: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            background-image: radial-gradient(circle at top right, #1e1b4b, transparent), 
+                              radial-gradient(circle at bottom left, #1e1b4b, transparent);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 60px 20px;
+        }
+
+        .header { text-align: center; margin-bottom: 50px; }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin: 0;
+            background: linear-gradient(to right, #818cf8, #c084fc);
+            --webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* --- PHẦN QUAN TRỌNG: CHỈNH HÀNG NGANG --- */
+        .grid {
+            display: flex;            /* Chuyển sang Flexbox */
+            flex-wrap: wrap;         /* Tự động xuống hàng nếu thiếu chỗ */
+            justify-content: center; /* Căn giữa các card */
+            gap: 25px;               /* Khoảng cách tách nhau ra giữa các card */
+            width: 100%;
+            max-width: 1200px;       /* Nới rộng khung chứa */
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            text-decoration: none;
+            color: white;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 200px;            /* Độ rộng cố định cho mỗi card */
+            box-sizing: border-box;
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+            border-color: var(--primary);
+            background: rgba(45, 55, 72, 0.9);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(99, 102, 241, 0.2);
+        }
+
+        .icon { font-size: 45px; margin-bottom: 15px; }
+        .card h3 { margin: 10px 0; font-size: 1.1rem; font-weight: 600; }
+        
+        .badge {
+            margin-top: auto; /* Đẩy badge xuống dưới cùng card */
+            background: rgba(99, 102, 241, 0.2);
+            color: #818cf8;
+            padding: 5px 15px;
+            border-radius: 99px;
+            font-size: 0.7rem;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <h1>Danh sách 5 App MVP của Duy</h1>
+    <div class="menu">
+        <a class="card" href="/app1/">App 1</a>
+        <a class="card" href="/app2/index.html">App 2</a>
+        <a class="card" href="/app3/index.html">App 3</a>
+        <a class="card" href="/app4/index.html">App 4</a>
+        <a class="card" href="/app5/index.html">App 5</a>
+    </div>
+</body>
+</html>
